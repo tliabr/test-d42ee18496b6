@@ -1,0 +1,40 @@
+name: Run RSpec tests
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: ruby:2.7.6
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Gem cache
+        id: cache-bundle
+        uses: actions/cache@v1
+        with:
+          path: vendor/bundle
+          key: bundle-${{ hashFiles('**/Gemfile.lock') }}
+
+      - name: Bundle install
+        env:
+          RAILS_ENV: test
+        run: |
+          bundle install --jobs 4 --retry 3 --deployment
+
+      - name: Setup Database
+        env:
+          RAILS_ENV: test
+        run: |
+          bin/rails db:reset
+
+      - name: Run tests
+        env:
+          RAILS_ENV: test
+        run: |
+          bin/rspec spec
